@@ -58,3 +58,46 @@ func (db *DB) GetChirpsById(id int) (*Chirp, error) {
 	}
 	return nil, errors.New("Chirp not found")
 }
+
+func (db *DB) DeleteChirp(id int) error {
+	dbStructure, err := db.loadDB()
+	if err != nil {
+		return err
+	}
+
+	if _, ok := dbStructure.Chirps[id]; !ok {
+		return errors.New("Chirp not found")
+	}
+
+	delete(dbStructure.Chirps, id)
+
+	err = db.writeDB(dbStructure)
+	if err != nil {
+		return err
+	}
+	db.resetChirpIds()
+
+	return nil
+}
+
+func (db *DB) resetChirpIds() error {
+	dbStructure, err := db.loadDB()
+	if err != nil {
+		return err
+	}
+
+	chirps := dbStructure.Chirps
+	dbStructure.Chirps = make(map[int]Chirp)
+
+	for i, chirp := range chirps {
+		chirp.ID = i + 1
+		dbStructure.Chirps[i+1] = chirp
+	}
+
+	err = db.writeDB(dbStructure)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

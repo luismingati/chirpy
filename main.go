@@ -13,6 +13,7 @@ type apiConfig struct {
 	fileserverHits int
 	DB             *database.DB
 	jwtSecret      string
+	ApiToken       string
 }
 
 func main() {
@@ -24,6 +25,10 @@ func main() {
 	if jwtSecret == "" {
 		log.Fatal("JWT_SECRET environment variable is not set")
 	}
+	apiToken := os.Getenv("POLKA_KEY")
+	if apiToken == "" {
+		log.Fatal("POLKA_KEY environment variable is not set")
+	}
 
 	db, err := database.NewDB("database.json")
 	if err != nil {
@@ -34,6 +39,7 @@ func main() {
 		fileserverHits: 0,
 		DB:             db,
 		jwtSecret:      jwtSecret,
+		ApiToken:       apiToken,
 	}
 
 	mux := http.NewServeMux()
@@ -45,9 +51,12 @@ func main() {
 	mux.HandleFunc("POST /api/chirps", apiCfg.handleChirpsCreate)
 	mux.HandleFunc("GET /api/chirps", apiCfg.handleChirpsRetrieve)
 	mux.HandleFunc("GET /api/chirps/{id}", apiCfg.handleChirpsRetrieveById)
+	mux.HandleFunc("DELETE /api/chirps/{id}", apiCfg.HandleChirpsDelete)
 
 	mux.HandleFunc("POST /api/users", apiCfg.handlerUsersCreate)
 	mux.HandleFunc("PUT /api/users", apiCfg.handlerUsersUpdate)
+
+	mux.HandleFunc("POST /api/polka/webhooks", apiCfg.HandlerWebhook)
 
 	mux.HandleFunc("POST /api/login", apiCfg.handlerLogin)
 	mux.HandleFunc("POST /api/revoke", apiCfg.handlerRevoke)
